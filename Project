@@ -1,0 +1,596 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+# Importing library to read the .csv file
+import pandas as pd
+
+
+# In[2]:
+
+
+# Importing the train dataset
+data = pd.read_csv('C:/Users/Rohit/Desktop/Projects/Sales Prediction/Train.csv')
+data
+
+
+# In[3]:
+
+
+# Information about the DataType
+data.info()
+
+
+# In[4]:
+
+
+# Checking out which variables have null values
+data.isnull().sum()
+
+
+# ###### The are missing values in Item_Weight (Numerical Feature) & Outlet_Size (Categorical Feature). So for handling this missing values, we have to replace the NA of numerical variable with mean and categorical variable with mode.
+
+# In[5]:
+
+
+# Mean of Item_Weight
+data['Item_Weight'].mean()
+
+
+# In[6]:
+
+
+# Replacing NA values in Item_Weight with mean
+data['Item_Weight'].fillna(data['Item_Weight'].mean(), inplace = True)
+
+
+# In[7]:
+
+
+# Re-checking out which variables have null values
+data.isnull().sum()
+
+
+# In[8]:
+
+
+# Removing NA from Outlet_Size
+
+df1 = data.dropna(subset = ['Outlet_Size'])
+df1
+
+
+# In[9]:
+
+
+# Checking the corelation between the variables
+df1.apply(lambda x : pd.factorize(x)[0]).corr(method='spearman', min_periods=1)
+
+
+# #### From above spearman corelation, we can say that Outlet_Size is corelated to Outlet_Type, we have not considered Outlet_Identifier because it is a unique value for every Outlet_Size and Outlet_Establishment_Year is year identity. 
+
+# In[10]:
+
+
+# Checking the frequency of Outlet_Size w.r.t Outlet_Type
+df1.groupby(['Outlet_Type','Outlet_Size'])['Outlet_Type'].count()
+
+
+# In[11]:
+
+
+# Replacing NA values in Outlet_Size with maximum frequency in Outlet_Type
+data.loc[(data['Outlet_Size'].isna()) & (data['Outlet_Type']=='Grocery Store'), 'Outlet_Size'] = 'Small'
+data.loc[(data['Outlet_Size'].isna()) & (data['Outlet_Type']=='Supermarket Type1'), 'Outlet_Size'] = 'Small'
+data.loc[(data['Outlet_Size'].isna()) & (data['Outlet_Type']=='Supermarket Type2'), 'Outlet_Size'] = 'Medium'
+data.loc[(data['Outlet_Size'].isna()) & (data['Outlet_Type']=='Supermarket Type3'), 'Outlet_Size'] = 'Medium'
+data
+
+
+# In[12]:
+
+
+data.isnull().sum()
+
+
+# In[13]:
+
+
+data['Outlet_Size'].mode()
+
+
+# ### Data Analysis
+
+# #### Numerical Feature
+
+# In[14]:
+
+
+data.describe()
+
+
+# In[15]:
+
+
+# Importing packages for visualization
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas.util.testing as tm
+
+
+# In[16]:
+
+
+# Item_Weight distribution
+plt.figure(figsize=(6,6))
+sns.distplot(data['Item_Weight'])
+plt.show()
+
+
+# In[17]:
+
+
+# Item Visibility distribution
+plt.figure(figsize=(6,6))
+sns.distplot(data['Item_Visibility'])
+plt.show()
+
+
+# In[18]:
+
+
+# Item MRP distribution
+plt.figure(figsize=(6,6))
+sns.distplot(data['Item_MRP'])
+plt.show()
+
+
+# In[19]:
+
+
+# Item_Outlet_Sales distribution
+plt.figure(figsize=(6,6))
+sns.distplot(data['Item_Outlet_Sales'])
+plt.show()
+
+
+# In[20]:
+
+
+plt.figure(figsize=(6,6))
+sns.countplot(x='Outlet_Establishment_Year', data=data)
+plt.show()
+
+
+# #### Categorical Feature
+
+# In[21]:
+
+
+# Item_Fat_Content column
+plt.figure(figsize=(6,6))
+sns.countplot(x='Item_Fat_Content', data=data)
+plt.show()
+
+
+# In[22]:
+
+
+# Item_Type column
+plt.figure(figsize=(30,6))
+sns.countplot(x='Item_Type', data=data)
+plt.show()
+
+
+# In[23]:
+
+
+# Outlet_Size column
+plt.figure(figsize=(6,6))
+sns.countplot(x='Outlet_Size', data=data)
+plt.show()
+
+
+# In[24]:
+
+
+# Outlet_Type column
+plt.figure(figsize=(10,10))
+sns.countplot(x='Outlet_Type', data=data)
+plt.show()
+
+
+# In[25]:
+
+
+# Outlet_Identifier
+plt.figure(figsize=(10,10))
+sns.countplot(x='Outlet_Identifier', data=data)
+plt.show()
+
+
+# ### Data pre-processing
+
+# In[26]:
+
+
+# Check top 5 rows of data
+data.head()
+
+
+   ##### ------ Here Item_Fat_Content has many names for the same category. So it has to merged in 'Regular' & 'Low Fat'
+
+# In[27]:
+
+
+# Checking value_counts of different options for Item_Fat_Content
+data['Item_Fat_Content'].value_counts()
+
+
+# In[28]:
+
+
+# Replacing the irrelevant options with the relevant ones
+data.replace({'Item_Fat_Content':{'LF':'Low Fat','low fat':'Low Fat','reg':'Regular'}}, inplace = True)
+
+
+# In[29]:
+
+
+# After replacement now again checking value_counts of different options for Item_Fat_Content
+data['Item_Fat_Content'].value_counts()
+
+
+# #### Label encoding for reading into machines
+
+# In[30]:
+
+
+# Importing libraries for encoding
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+
+
+# In[31]:
+
+
+encoder = LabelEncoder()
+
+
+# In[32]:
+
+
+data.head()
+
+
+# In[33]:
+
+
+# Encoding
+data['Item_Identifier'] = encoder.fit_transform(data['Item_Identifier'])
+data['Item_Fat_Content'] = encoder.fit_transform(data['Item_Fat_Content'])
+data['Item_Type'] = encoder.fit_transform(data['Item_Type'])
+data['Outlet_Identifier'] = encoder.fit_transform(data['Outlet_Identifier'])
+data['Outlet_Size'] = encoder.fit_transform(data['Outlet_Size'])
+data['Outlet_Location_Type'] = encoder.fit_transform(data['Outlet_Location_Type'])
+data['Outlet_Type'] = encoder.fit_transform(data['Outlet_Type'])
+
+
+# In[34]:
+
+
+# Checking the corelation between the variables
+data.apply(lambda x : pd.factorize(x)[0]).corr(method='spearman', min_periods=1)
+
+
+# In[37]:
+
+
+# Checking the variable after encoding:
+data.head()
+
+
+# #### Splitting features and Target
+
+# In[38]:
+
+
+X = data.drop(columns='Item_Outlet_Sales', axis=1)
+Y = data['Item_Outlet_Sales']
+
+
+# In[39]:
+
+
+X
+
+
+# In[40]:
+
+
+Y
+
+
+# #### Splitting the data into Training data & Testing Data
+
+# In[41]:
+
+
+from sklearn.model_selection import train_test_split
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=2)
+
+
+# In[42]:
+
+
+X_train
+
+
+# In[43]:
+
+
+Y_train
+
+
+# In[44]:
+
+
+X_test
+
+
+# In[45]:
+
+
+Y_test
+
+
+# #### Machine Learning Model Training
+
+# ##### -- Linear Regression Model
+
+# In[46]:
+
+
+# importing library for Linear Regression Model
+from sklearn.model_selection import train_test_split
+from sklearn import datasets, linear_model, metrics
+
+
+# In[47]:
+
+
+# Applying & Fitting
+lr = linear_model.LinearRegression()
+lr.fit(X_train, Y_train)
+
+
+# ------- #### Evaluation based on Linear Regression Model
+
+# In[48]:
+
+
+# prediction on training_data_linearModel
+training_data_prediction_lr = lr.predict(X_train)
+# R squared Value
+r2_train = metrics.r2_score(Y_train, training_data_prediction_lr)
+print('R Squared value = ', r2_train)
+
+
+# In[49]:
+
+
+# prediction on test data
+test_data_prediction_lr = lr.predict(X_test)
+# R squared Value
+r2_test = metrics.r2_score(Y_test, test_data_prediction_lr)
+print('R Squared value = ', r2_test)
+
+
+# In[51]:
+
+
+# Plotting the feature variables
+
+# Library
+from matplotlib import pyplot
+
+# Plotting Figure 
+fig = plt.figure(figsize=(30,20))
+
+# get importance
+importance_lr = lr.coef_
+
+# summarize feature importance
+for i,v in enumerate(importance_lr):
+    print('Feature: %0d, Score: %.5f' % (i,v))
+
+# plot feature importance
+pd.Series(lr.coef_, 
+         index = X.columns).sort_values(ascending = False).plot(kind = 'bar', 
+                                                                figsize = (14,6));
+
+
+# ##### -- XGBoost Regression Model
+
+# In[52]:
+
+
+# Importing Library for XGBoost Regression Model
+from xgboost import XGBRegressor
+
+
+# In[54]:
+
+
+# Applying & Fitting
+regressor_xgb = XGBRegressor(reg_alpha=2.75, reg_lambda=4.5)
+regressor_xgb.fit(X_train, Y_train)
+
+
+# ------- #### Evaluation based on XGB Regression Model
+
+# In[55]:
+
+
+# prediction on training data
+training_data_prediction_xgb = regressor_xgb.predict(X_train)
+# R squared Value
+r2_train = metrics.r2_score(Y_train, training_data_prediction_xgb)
+print('R Squared value = ', r2_train)
+
+
+# In[56]:
+
+
+# prediction on test data
+test_data_prediction_xgb = regressor_xgb.predict(X_test)
+# R squared Value
+r2_test = metrics.r2_score(Y_test, test_data_prediction_xgb)
+print('R Squared value = ', r2_test)
+
+
+# In[57]:
+
+
+# Plotting the feature variables
+
+# Plotting Figure 
+fig = plt.figure(figsize=(30,20))
+
+# get importance
+importance_xgb = regressor_xgb.feature_importances_
+
+# summarize feature importance
+for i,v in enumerate(importance_xgb):
+    print('Feature: %0d, Score: %.5f' % (i,v))
+
+# plot feature importance
+pd.Series(regressor_xgb.feature_importances_, 
+         index = X.columns).sort_values(ascending = False).plot(kind = 'bar', 
+                                                                figsize = (14,6));
+
+
+# ##### -- Random Forest Model
+
+# In[58]:
+
+
+# importing library
+from sklearn.ensemble import RandomForestRegressor
+
+
+# In[59]:
+
+
+# Instantiate model with 1000 decision trees
+rf = RandomForestRegressor(n_estimators = 1000, random_state = 42)
+
+# Train the model on training data
+model = rf.fit(X_train, Y_train)
+
+
+# ------- #### Evaluation based on Random Forest Model
+
+# In[60]:
+
+
+# Use the forest's predict method on the train data
+training_data_prediction_rf = model.predict(X_train)
+# R squared Value
+r2_train = metrics.r2_score(Y_train, training_data_prediction_rf)
+print('R Squared value = ', r2_train)
+
+
+# In[61]:
+
+
+# Use the forest's predict method on the test data
+test_data_prediction_rf = model.predict(X_test)
+# R squared Value
+r2_test = metrics.r2_score(Y_test, test_data_prediction_rf)
+print('R Squared value = ', r2_test)
+
+
+# In[62]:
+
+
+# Plotting the feature variables
+
+# get importance
+importance_rf = rf.feature_importances_
+# summarize feature importance
+for i,v in enumerate(importance_rf):
+    print('Feature: %0d, Score: %.5f' % (i,v))
+# plot feature importance
+pd.Series(importance_rf, 
+         index = X.columns).sort_values(ascending = False).plot(kind = 'bar', 
+                                                                figsize = (14,6));
+
+
+# ##### -- Decision Tree Model
+
+# In[64]:
+
+
+# importing libraries
+
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.metrics import r2_score
+get_ipython().system('pip install tqdm')
+from tqdm import tqdm
+tqdm.pandas()
+
+
+# In[65]:
+
+
+# Applying & Fitting
+dt = DecisionTreeRegressor(max_depth=5)
+model_r = dt.fit(X_train, Y_train)
+
+
+# ------- #### Evaluation based on Decision Tree Model
+
+# In[66]:
+
+
+# prediction on training data
+training_data_prediction_dt = model_r.predict(X_train)
+# R squared Value
+r2_train = metrics.r2_score(Y_train, training_data_prediction_dt)
+print('R Squared value = ', r2_train)
+
+
+# In[67]:
+
+
+# prediction on test data
+test_data_prediction_dt = model_r.predict(X_test)
+# R squared Value
+r2_test = metrics.r2_score(Y_test, test_data_prediction_dt)
+print('R Squared value = ', r2_test)
+
+
+# In[68]:
+
+
+# Plotting the feature variables
+
+# get importance
+importance_dt = dt.feature_importances_
+
+# summarize feature importance
+for i,v in enumerate(importance_dt):
+    print('Feature: %0d, Score: %.5f' % (i,v))
+
+# plot feature importance
+pd.Series(importance_dt, 
+         index = X.columns).sort_values(ascending = False).plot(kind = 'bar', 
+                                                                figsize = (14,6));
+
+
+# ##### As the accuracy of Decision Tree Model is better than other model. But we can't get the important features/variables from this model as it explains only Item_MRP, Outlet_Type & Outlet_Establishment_Year only, rest of the variables can't be explained. So having the maximum accuracy is not the onlly option we will check here. The second best Accuracy is came from Random Forest Model and all the variables can be explained here. Therefore we will move ahead with Random Forest Model.
