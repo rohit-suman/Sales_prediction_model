@@ -1,4 +1,4 @@
-# Sales-Prediction-Model
+# Sales_prediction_model
 Project -  Sales Prediction - Ecommerce
 
 Checking all the models & its accuracies i.e. 
